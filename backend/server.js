@@ -19,6 +19,7 @@ const dateMarkRoutes = require('./routes/dateMarkRoutes');
 const additionalDefaultRoutes = require('./routes/additionalDefaultRoutes'); // [NEW]
 const homeRoutes = require('./routes/homeRoutes');
 const jobRequestRoutes = require('./routes/jobRequestRoutes');
+const toolStoreRoutes = require('./routes/toolStoreRoutes');
 const startScheduler = require('./scheduler');
 
 const http = require('http'); // Import http
@@ -96,6 +97,7 @@ io.on('connection', (socket) => {
 // Routes
 app.use('/api/home', homeRoutes);
 app.use('/api/job-requests', jobRequestRoutes);
+app.use('/api/tool-store', toolStoreRoutes);
 app.use('/api/machines', machineRoutes);
 app.use('/api/pm', pmRoutes);
 app.use('/api/dashboard', dashboardRoutes);

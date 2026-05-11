@@ -77,7 +77,46 @@ function requirePermission(featureKey, action) {
   };
 }
 
+function requireAnyPermission(requiredPermissions) {
+  return async (req, res, next) => {
+    try {
+      if (!req.user || !req.user.id) {
+        return res.status(401).json({
+          success: false,
+          error: {
+            code: "UNAUTHORIZED",
+            message: "Authentication is required.",
+            details: [],
+          },
+        });
+      }
+
+      const permissions = await loadUserPermissionMap(req.user.id);
+      const allowed = requiredPermissions.some(([featureKey, action]) =>
+        hasPermission(permissions, featureKey, action)
+      );
+
+      if (!allowed) {
+        return res.status(403).json({
+          success: false,
+          error: {
+            code: "PERMISSION_DENIED",
+            message: "You do not have permission.",
+            details: [],
+          },
+        });
+      }
+
+      req.permissions = permissions;
+      next();
+    } catch (error) {
+      next(error);
+    }
+  };
+}
+
 module.exports = {
   loadUserPermissionMap,
+  requireAnyPermission,
   requirePermission,
 };

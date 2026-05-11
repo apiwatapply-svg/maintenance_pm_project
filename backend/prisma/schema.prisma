@@ -28,6 +28,7 @@ model Machine {
   pmrecords          PMRecord[]
   assignedUsers      UserMaster[] // [NEW] Assigned users for this machine
   jobRequests        JobRequest[]
+  toolStoreTransactions ToolStoreTransaction[]
 }
 
 model MachineMaster {
@@ -200,6 +201,7 @@ model UserMaster {
   auditLogs        AuditLog[]
   jobRequests      JobRequest[]
   jobRequestComments JobRequestComment[]
+  toolStoreTransactions ToolStoreTransaction[]
 }
 
 model JobRequest {
@@ -224,11 +226,63 @@ model JobRequest {
   createdBy UserMaster? @relation(fields: [createdById], references: [id], onDelete: NoAction, onUpdate: NoAction)
   comments  JobRequestComment[]
   files     JobRequestFile[]
+  toolStoreTransactions ToolStoreTransaction[]
 
   @@index([machineId])
   @@index([createdById])
   @@index([status])
   @@index([priority])
+  @@index([createdAt])
+}
+
+model ToolStoreItem {
+  id           Int      @id @default(autoincrement())
+  itemCode     String   @unique
+  name         String
+  itemType     String   @default("TOOLING") // TOOLING or SPARE_PART
+  category     String?
+  categoryOther String?
+  unit         String   @default("pcs")
+  currentStock Int      @default(0)
+  minStock     Int      @default(0)
+  location     String?
+  barcode      String?
+  status       String   @default("ACTIVE")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  transactions ToolStoreTransaction[]
+
+  @@index([itemType])
+  @@index([category])
+  @@index([barcode])
+  @@index([status])
+}
+
+model ToolStoreTransaction {
+  id           Int      @id @default(autoincrement())
+  itemId       Int
+  action       String // RECEIVE, ISSUE, BORROW, RETURN
+  quantity     Int
+  beforeStock  Int
+  afterStock   Int
+  machineId    Int?
+  jobRequestId Int?
+  userId       Int?
+  scanCode     String?
+  note         String?  @db.NVarChar(Max)
+  createdAt    DateTime @default(now())
+
+  item       ToolStoreItem @relation(fields: [itemId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  machine    Machine?      @relation(fields: [machineId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  jobRequest JobRequest?   @relation(fields: [jobRequestId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  user       UserMaster?   @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([itemId])
+  @@index([action])
+  @@index([machineId])
+  @@index([jobRequestId])
+  @@index([userId])
   @@index([createdAt])
 }
 
