@@ -1,6 +1,191 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
+const featureDefinitions = [
+    ['dashboard', 'Realtime Dashboard', '/dashboard', true, false, 10],
+    ['machine', 'Machine Management', '/machines', true, false, 20],
+    ['preventive', 'Preventive Maintenance', '/pm', true, false, 30],
+    ['job_request', 'Job Request', '/job-requests', true, false, 40],
+    ['work_order', 'Work Order', '/work-orders', true, false, 50],
+    ['tooling', 'Tooling Storage', '/tooling', true, false, 60],
+    ['spare_part', 'Spare Part Inventory', '/spare-parts', true, false, 70],
+    ['analysis', 'Analysis', '/analysis', true, false, 80],
+    ['three_d', '3D Machine View', '/three-d', true, false, 90],
+    ['report', 'Reports', '/reports', true, false, 100],
+    ['notification', 'Notifications', '/notifications', true, false, 110],
+    ['user_permission', 'User & Permission', '/permissions', true, false, 120],
+    ['setting', 'Settings', '/settings', true, false, 130],
+    ['predictive', 'Predictive Maintenance', '/predictive-future', false, true, 140],
+];
+
+const permissionActions = ['view', 'create', 'edit', 'delete', 'approve', 'reject', 'assign', 'export', 'admin'];
+
+const roleDefinitions = [
+    {
+        roleKey: 'admin',
+        name: 'Admin',
+        description: 'Full system administrator',
+        isSystem: true,
+        permissions: 'all',
+    },
+    {
+        roleKey: 'technician',
+        name: 'Technician',
+        description: 'Maintenance technician',
+        isSystem: true,
+        permissions: {
+            dashboard: ['view'],
+            machine: ['view'],
+            preventive: ['view', 'edit'],
+            job_request: ['view', 'edit'],
+            work_order: ['view', 'edit'],
+            tooling: ['view'],
+            spare_part: ['view'],
+            notification: ['view'],
+        },
+    },
+    {
+        roleKey: 'production_user',
+        name: 'Production User',
+        description: 'Production user who can submit maintenance requests',
+        isSystem: true,
+        permissions: {
+            dashboard: ['view'],
+            machine: ['view'],
+            job_request: ['view', 'create'],
+            notification: ['view'],
+        },
+    },
+    {
+        roleKey: 'viewer',
+        name: 'Viewer',
+        description: 'Read-only management viewer',
+        isSystem: true,
+        permissions: {
+            dashboard: ['view'],
+            machine: ['view'],
+            analysis: ['view'],
+            report: ['view'],
+            predictive: ['view'],
+        },
+    },
+];
+
+function roleAllows(roleDefinition, featureKey, action) {
+    if (roleDefinition.permissions === 'all') {
+        return true;
+    }
+
+    return roleDefinition.permissions[featureKey]?.includes(action) || false;
+}
+
+async function seedFeaturePermissions() {
+    const permissionsByKey = new Map();
+
+    for (const [featureKey, title, routePath, enabled, future, sortOrder] of featureDefinitions) {
+        const feature = await prisma.appFeature.upsert({
+            where: { featureKey },
+            update: {
+                title,
+                routePath,
+                enabled,
+                future,
+                sortOrder,
+            },
+            create: {
+                featureKey,
+                title,
+                description: `${title} feature`,
+                routePath,
+                enabled,
+                future,
+                sortOrder,
+            },
+        });
+
+        for (const action of permissionActions) {
+            const permissionKey = `${featureKey}.${action}`;
+            const permission = await prisma.appPermission.upsert({
+                where: { permissionKey },
+                update: {
+                    featureId: feature.id,
+                    action,
+                    description: `${title}: ${action}`,
+                },
+                create: {
+                    featureId: feature.id,
+                    action,
+                    permissionKey,
+                    description: `${title}: ${action}`,
+                },
+            });
+
+            permissionsByKey.set(permissionKey, permission);
+        }
+    }
+
+    for (const roleDefinition of roleDefinitions) {
+        const role = await prisma.appRole.upsert({
+            where: { roleKey: roleDefinition.roleKey },
+            update: {
+                name: roleDefinition.name,
+                description: roleDefinition.description,
+                isSystem: roleDefinition.isSystem,
+            },
+            create: {
+                roleKey: roleDefinition.roleKey,
+                name: roleDefinition.name,
+                description: roleDefinition.description,
+                isSystem: roleDefinition.isSystem,
+            },
+        });
+
+        for (const [featureKey] of featureDefinitions) {
+            for (const action of permissionActions) {
+                const allowed = roleAllows(roleDefinition, featureKey, action);
+                if (!allowed) {
+                    continue;
+                }
+
+                const permission = permissionsByKey.get(`${featureKey}.${action}`);
+                await prisma.appRolePermission.upsert({
+                    where: {
+                        roleId_permissionId: {
+                            roleId: role.id,
+                            permissionId: permission.id,
+                        },
+                    },
+                    update: { allowed },
+                    create: {
+                        roleId: role.id,
+                        permissionId: permission.id,
+                        allowed,
+                    },
+                });
+            }
+        }
+    }
+
+    await prisma.futureFeature.upsert({
+        where: { featureKey: 'predictive' },
+        update: {
+            name: 'Predictive Maintenance',
+            status: 'future',
+            targetPhase: 'Phase 6+',
+            description: 'Future module for sensor trend, PdM alerts, and failure prediction. Current scope is placeholder only.',
+        },
+        create: {
+            featureKey: 'predictive',
+            name: 'Predictive Maintenance',
+            status: 'future',
+            targetPhase: 'Phase 6+',
+            description: 'Future module for sensor trend, PdM alerts, and failure prediction. Current scope is placeholder only.',
+        },
+    });
+
+    console.log(`Seeded ${featureDefinitions.length} features, ${permissionActions.length} actions, and ${roleDefinitions.length} roles.`);
+}
+
 const machines = [
     { code: '052453', name: 'GE2-001' },
     { code: '052639', name: 'GE2-002' },
@@ -164,6 +349,9 @@ async function main() {
         laserCount++;
     }
     console.log(`Seeded ${laserCount} Laser Welding machine masters.`);
+
+    // 6. Seed feature/action permissions and future feature placeholders
+    await seedFeaturePermissions();
 }
 
 main()

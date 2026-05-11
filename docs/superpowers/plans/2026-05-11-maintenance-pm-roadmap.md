@@ -210,7 +210,7 @@ Expected: commit succeeds.
 - Create: `tests/unit/permission.service.test.js`
 - Create: `docs/erd/permission-model.md`
 
-- [ ] **Step 1: Add permission models to Prisma**
+- [x] **Step 1: Add permission models to Prisma**
 
 Add these models to `backend/prisma/schema.prisma` using names that do not collide with current `UserMaster`:
 
@@ -344,7 +344,7 @@ Also add relation fields to `UserMaster`:
   auditLogs        AuditLog[]
 ```
 
-- [ ] **Step 2: Run Prisma validation**
+- [x] **Step 2: Run Prisma validation**
 
 Run:
 
@@ -359,7 +359,7 @@ Expected:
 The schema at prisma/schema.prisma is valid
 ```
 
-- [ ] **Step 3: Seed features and permissions**
+- [x] **Step 3: Seed features and permissions**
 
 Update `backend/prisma/seed.js` to seed:
 
@@ -392,7 +392,7 @@ Rules:
 - Viewer gets `view` on dashboard, machine, analysis, report, predictive.
 - Predictive gets `view` only and remains `future=true`, `enabled=false`.
 
-- [ ] **Step 4: Add permission service tests**
+- [x] **Step 4: Add permission service tests**
 
 Create `tests/unit/permission.service.test.js` with assertions for:
 
@@ -418,7 +418,7 @@ test("user override can deny role permission", () => {
 });
 ```
 
-- [ ] **Step 5: Implement permission service**
+- [x] **Step 5: Implement permission service**
 
 Create `backend/services/permission.service.js`:
 
@@ -452,7 +452,7 @@ module.exports = {
 };
 ```
 
-- [ ] **Step 6: Commit permission model**
+- [x] **Step 6: Commit permission model**
 
 Run:
 

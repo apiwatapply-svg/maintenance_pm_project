@@ -194,6 +194,9 @@ model UserMaster {
 
   assignedMachines Machine[] // [NEW] Machines assigned to this user
   dateMarks        UserDateMark[] // [NEW] User's personal date marks
+  appRoles         AppUserRole[]
+  featureOverrides AppUserFeatureOverride[]
+  auditLogs        AuditLog[]
 }
 
 model Area {
@@ -255,6 +258,126 @@ model AdditionalDetailDefault {
 
   @@unique([machineId, preventiveTypeId, dropdownKey, textChecklistId])
   @@index([machineId, preventiveTypeId])
+}
+
+model AppRole {
+  id          Int      @id @default(autoincrement())
+  roleKey     String   @unique
+  name        String
+  description String?
+  isSystem    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users       AppUserRole[]
+  permissions AppRolePermission[]
+}
+
+model AppUserRole {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  roleId    Int
+  createdAt DateTime @default(now())
+
+  user UserMaster @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role AppRole    @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId])
+  @@index([userId])
+  @@index([roleId])
+}
+
+model AppFeature {
+  id          Int      @id @default(autoincrement())
+  featureKey  String   @unique
+  title       String
+  description String?
+  routePath   String?
+  enabled     Boolean  @default(true)
+  future      Boolean  @default(false)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  permissions AppPermission[]
+  overrides   AppUserFeatureOverride[]
+}
+
+model AppPermission {
+  id            Int      @id @default(autoincrement())
+  featureId     Int
+  action        String
+  permissionKey String   @unique
+  description   String?
+  createdAt     DateTime @default(now())
+
+  feature AppFeature          @relation(fields: [featureId], references: [id], onDelete: Cascade)
+  roles   AppRolePermission[]
+
+  @@unique([featureId, action])
+  @@index([featureId])
+}
+
+model AppRolePermission {
+  id           Int      @id @default(autoincrement())
+  roleId       Int
+  permissionId Int
+  allowed      Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  role       AppRole       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission AppPermission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@index([roleId])
+  @@index([permissionId])
+}
+
+model AppUserFeatureOverride {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  featureId Int
+  action    String
+  allowed   Boolean
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user    UserMaster @relation(fields: [userId], references: [id], onDelete: Cascade)
+  feature AppFeature @relation(fields: [featureId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, featureId, action])
+  @@index([userId])
+  @@index([featureId])
+}
+
+model AuditLog {
+  id         Int      @id @default(autoincrement())
+  userId     Int?
+  featureKey String?
+  action     String
+  entityType String?
+  entityId   String?
+  message    String?
+  metadata   String?  @db.NVarChar(Max)
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
+  user UserMaster? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([featureKey])
+  @@index([createdAt])
+}
+
+model FutureFeature {
+  id          Int      @id @default(autoincrement())
+  featureKey  String   @unique
+  name        String
+  status      String   @default("future")
+  targetPhase String?
+  description String?  @db.NVarChar(Max)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 // Update relationships
