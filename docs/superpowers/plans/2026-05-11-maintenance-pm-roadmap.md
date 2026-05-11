@@ -669,7 +669,7 @@ git commit -m "feat: add home feature permission api"
 - Modify: `frontend/my-app/src/app/page.tsx`
 - Create: `frontend/my-app/src/app/predictive-future/page.tsx`
 
-- [ ] **Step 1: Add home types**
+- [x] **Step 1: Add home types**
 
 Create `frontend/my-app/src/features/home/types.ts`:
 
@@ -698,7 +698,7 @@ export type HomeFeature = {
 };
 ```
 
-- [ ] **Step 2: Add API service**
+- [x] **Step 2: Add API service**
 
 Create `frontend/my-app/src/features/home/services/homeApi.ts`:
 
@@ -713,7 +713,7 @@ export async function fetchHomeFeatures(): Promise<HomeFeature[]> {
 }
 ```
 
-- [ ] **Step 3: Build feature card**
+- [x] **Step 3: Build feature card**
 
 Create `frontend/my-app/src/features/home/components/HomeFeatureCard.tsx`:
 
@@ -765,7 +765,7 @@ export function HomeFeatureCard({ feature }: Props) {
 }
 ```
 
-- [ ] **Step 4: Build responsive grid**
+- [x] **Step 4: Build responsive grid**
 
 Create `frontend/my-app/src/features/home/components/HomeFeatureGrid.tsx`:
 
@@ -803,7 +803,7 @@ export function HomeFeatureGrid() {
 }
 ```
 
-- [ ] **Step 5: Replace home page entry**
+- [x] **Step 5: Replace home page entry**
 
 Modify `frontend/my-app/src/app/page.tsx` to render:
 
@@ -819,7 +819,7 @@ export default function Home() {
 }
 ```
 
-- [ ] **Step 6: Add Predictive Future page**
+- [x] **Step 6: Add Predictive Future page**
 
 Create `frontend/my-app/src/app/predictive-future/page.tsx`:
 
@@ -836,7 +836,7 @@ export default function PredictiveFuturePage() {
 }
 ```
 
-- [ ] **Step 7: Build and commit**
+- [x] **Step 7: Build and commit**
 
 Run:
 

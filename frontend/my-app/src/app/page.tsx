@@ -10,6 +10,7 @@ import { useAuth } from "../context/AuthContext";
 import RescheduleModal from "./components/RescheduleModal";
 import ActionPopover from "./components/ActionPopover";
 import { useRouter } from "next/navigation";
+import { HomeFeatureGrid } from "@/features/home/components/HomeFeatureGrid";
 
 interface Machine {
   id: number;
@@ -483,6 +484,8 @@ export default function Home() {
   return (
     <>
       <div className="container-fluid py-4 px-4 bg-light min-vh-100">
+        <HomeFeatureGrid />
+
         {/* Header Section */}
         <div className="d-flex justify-content-between align-items-center mb-4">
           <div>
