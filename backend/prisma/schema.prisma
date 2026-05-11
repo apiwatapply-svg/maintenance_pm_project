@@ -27,6 +27,7 @@ model Machine {
   checklistTemplates ChecklistTemplate[]
   pmrecords          PMRecord[]
   assignedUsers      UserMaster[] // [NEW] Assigned users for this machine
+  jobRequests        JobRequest[]
 }
 
 model MachineMaster {
@@ -197,6 +198,64 @@ model UserMaster {
   appRoles         AppUserRole[]
   featureOverrides AppUserFeatureOverride[]
   auditLogs        AuditLog[]
+  jobRequests      JobRequest[]
+  jobRequestComments JobRequestComment[]
+}
+
+model JobRequest {
+  id               Int      @id @default(autoincrement())
+  requestNo        String   @unique
+  machineId        Int
+  createdById      Int?
+  status           String   @default("NEW")
+  priority         String   @default("NORMAL")
+  category         String?
+  categoryOther    String?
+  symptom          String?
+  symptomOther     String?
+  description      String?  @db.NVarChar(Max)
+  productionImpact Boolean  @default(false)
+  machineStopped   Boolean  @default(false)
+  ngCount          Int?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  machine   Machine     @relation(fields: [machineId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  createdBy UserMaster? @relation(fields: [createdById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  comments  JobRequestComment[]
+  files     JobRequestFile[]
+
+  @@index([machineId])
+  @@index([createdById])
+  @@index([status])
+  @@index([priority])
+  @@index([createdAt])
+}
+
+model JobRequestComment {
+  id           Int      @id @default(autoincrement())
+  jobRequestId Int
+  userId       Int?
+  comment      String   @db.NVarChar(Max)
+  createdAt    DateTime @default(now())
+
+  jobRequest JobRequest @relation(fields: [jobRequestId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  user       UserMaster? @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([jobRequestId])
+  @@index([userId])
+}
+
+model JobRequestFile {
+  id           Int      @id @default(autoincrement())
+  jobRequestId Int
+  filePath     String
+  fileType     String?
+  createdAt    DateTime @default(now())
+
+  jobRequest JobRequest @relation(fields: [jobRequestId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([jobRequestId])
 }
 
 model Area {

@@ -1196,6 +1196,14 @@ git commit -m "feat: improve preventive checklist builder"
 
 ### Task 8: Job Request Module
 
+**User refinement on 2026-05-11:**
+
+- Job Request must minimize typing.
+- Machine selection must be searchable dropdown and support choosing Zone, Type, and Machine No.
+- Category and symptom must be searchable dropdowns and each must support "Other" with a short free-text detail.
+- Tests must be written alongside implementation and cover as much behavior as practical.
+- Run CI/local verification before staging, committing, or pushing.
+
 **Files:**
 
 - Modify: `backend/prisma/schema.prisma`
@@ -1208,7 +1216,7 @@ git commit -m "feat: improve preventive checklist builder"
 - Create: `frontend/my-app/src/features/job-request/*`
 - Create: `docs/api/job-requests.md`
 
-- [ ] **Step 1: Add Job Request models**
+- [x] **Step 1: Add Job Request models**
 
 Add models:
 
@@ -1257,7 +1265,7 @@ model JobRequestFile {
 }
 ```
 
-- [ ] **Step 2: Implement fast form API**
+- [x] **Step 2: Implement fast form API**
 
 Endpoints:
 
@@ -1273,7 +1281,7 @@ POST /api/job-requests/:id/files
 
 Each route uses `authMiddleware` and `requirePermission("job_request", action)`.
 
-- [ ] **Step 3: Implement frontend fast form**
+- [x] **Step 3: Implement frontend fast form**
 
 Fast form steps:
 
@@ -1285,7 +1293,7 @@ Fast form steps:
 5. Submit
 ```
 
-- [ ] **Step 4: Emit events**
+- [x] **Step 4: Emit events**
 
 Emit:
 
@@ -1399,6 +1407,13 @@ git commit -m "feat: add work order lifecycle"
 ---
 
 ### Task 10: Tooling And Spare Part Modules
+
+**User refinement on 2026-05-11:**
+
+- Tooling must use searchable dropdowns for tool, location, borrower, and work order links.
+- Tooling must support scan-based receive and issue/borrow flows.
+- Tests must be written alongside implementation and cover stock and scan transaction behavior.
+- Run CI/local verification before staging, committing, or pushing.
 
 **Files:**
 
