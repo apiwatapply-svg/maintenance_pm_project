@@ -27,40 +27,11 @@ const jwt = require('jsonwebtoken');
 const { SECRET_KEY } = require('./middleware/authMiddleware');
 const { getSocketRoomsForUser } = require('./services/socket.service');
 
-const https = require('https');
-const fs = require('fs');
-
 const app = express();
 let server;
 
-// Check for SSL configuration
-// Check for SSL configuration
-if (process.env.SSL_KEY_PATH && process.env.SSL_CERT_PATH) {
-    try {
-        const httpsOptions = {
-            key: fs.readFileSync(process.env.SSL_KEY_PATH),
-            cert: fs.readFileSync(process.env.SSL_CERT_PATH)
-        };
-        server = https.createServer(httpsOptions, app);
-        console.log('Starting server in HTTPS mode...');
-    } catch (error) {
-        console.error('Failed to load SSL certificates, falling back to HTTP:', error.message);
-        server = http.createServer(app);
-    }
-} else {
-    // Fallback if env vars not set, but we want to try default paths for this fix
-    try {
-        const httpsOptions = {
-            key: fs.readFileSync('./server.key'),
-            cert: fs.readFileSync('./server.crt')
-        };
-        server = https.createServer(httpsOptions, app);
-        console.log('Starting server in HTTPS mode (default paths)...');
-    } catch (e) {
-        console.log('No SSL certs found, using HTTP');
-        server = http.createServer(app);
-    }
-}
+console.log('Starting server in HTTP mode...');
+server = http.createServer(app);
 
 const io = new Server(server, {
     cors: {

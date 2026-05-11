@@ -40,7 +40,7 @@ export default function LoginPage() {
             if (!err.response) {
                 // Network Error / CORS / Certificate Issue
                 errorTitle = 'Connection Error';
-                errorMessage = 'Cannot connect to server. Please check if the backend is running and you have accepted the security certificate (https://localhost:5003).';
+                errorMessage = `Cannot connect to server. Please check if the backend is running and you have accepted the security certificate (${config.apiServer}).`;
             } else if (err.response.data && err.response.data.error) {
                 // Server responded with error
                 errorMessage = err.response.data.error;
@@ -50,7 +50,7 @@ export default function LoginPage() {
                 icon: 'error',
                 title: errorTitle,
                 text: errorMessage,
-                footer: !err.response ? '<a href="https://localhost:5003" target="_blank">Click here to accept certificate</a>' : undefined
+                footer: !err.response ? `<a href="${config.apiServer}" target="_blank">Click here to accept certificate</a>` : undefined
             });
         } finally {
             setLoading(false);
