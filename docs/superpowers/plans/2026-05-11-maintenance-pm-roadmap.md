@@ -865,7 +865,7 @@ git commit -m "feat: add permission based home portal"
 - Modify: `frontend/my-app/src/app/components/SocketProvider.tsx`
 - Create: `docs/api/socket-events.md`
 
-- [ ] **Step 1: Add Socket event payload helper**
+- [x] **Step 1: Add Socket event payload helper**
 
 Create `backend/services/socket.service.js`:
 
@@ -895,7 +895,7 @@ module.exports = {
 };
 ```
 
-- [ ] **Step 2: Add authenticated room strategy**
+- [x] **Step 2: Add authenticated room strategy**
 
 Modify `backend/server.js` Socket.IO connection to:
 
@@ -923,7 +923,7 @@ io.on("connection", (socket) => {
 
 This is the first step. JWT verification must replace `userId` trust in the next security hardening task.
 
-- [ ] **Step 3: Update frontend SocketProvider**
+- [x] **Step 3: Update frontend SocketProvider**
 
 Modify `frontend/my-app/src/app/components/SocketProvider.tsx` so the connection sends auth metadata:
 
@@ -935,7 +935,7 @@ const socket = io(config.apiServer, {
 });
 ```
 
-- [ ] **Step 4: Document required events**
+- [x] **Step 4: Document required events**
 
 Create `docs/api/socket-events.md` listing these event groups:
 
@@ -989,7 +989,7 @@ notification:read
 predictive:future:opened
 ```
 
-- [ ] **Step 5: Commit socket foundation**
+- [x] **Step 5: Commit socket foundation**
 
 Run:
 

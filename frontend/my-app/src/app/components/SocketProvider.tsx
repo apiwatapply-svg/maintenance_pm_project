@@ -26,6 +26,9 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
 
         // Ensure we connect to the root, not /api
         const socketInstance = io(config.apiServer, {
+            auth: {
+                token: localStorage.getItem('token'),
+            },
             path: '/socket.io', // Default path
             transports: ['websocket'], // Force websocket
             reconnectionAttempts: 5,

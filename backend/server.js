@@ -22,6 +22,9 @@ const startScheduler = require('./scheduler');
 
 const http = require('http'); // Import http
 const { Server } = require('socket.io'); // Import Server from socket.io
+const jwt = require('jsonwebtoken');
+const { SECRET_KEY } = require('./middleware/authMiddleware');
+const { getSocketRoomsForUser } = require('./services/socket.service');
 
 const https = require('https');
 const fs = require('fs');
@@ -90,9 +93,29 @@ app.use((req, res, next) => {
     next();
 });
 
-// Socket.io Connection Handler (Optional logging)
+// Socket.io Connection Handler
 io.on('connection', (socket) => {
     console.log('Client connected:', socket.id);
+
+    const token = socket.handshake.auth?.token;
+    let socketUser = null;
+
+    if (token) {
+        try {
+            socketUser = jwt.verify(token, SECRET_KEY);
+        } catch (error) {
+            console.warn('Socket auth token rejected:', error.message);
+        }
+    }
+
+    getSocketRoomsForUser(socketUser).forEach((room) => socket.join(room));
+
+    socket.on('join:feature', (featureKey) => {
+        if (typeof featureKey === 'string' && featureKey.length <= 50) {
+            socket.join(`feature:${featureKey}`);
+        }
+    });
+
     socket.on('disconnect', () => {
         console.log('Client disconnected:', socket.id);
     });
