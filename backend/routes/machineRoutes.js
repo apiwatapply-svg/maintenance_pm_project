@@ -11,6 +11,7 @@ router.get('/', authenticateToken, machineController.getMachines);
 router.get('/:id', machineController.getMachineById);
 router.post('/bulk', machineController.createMachinesBulk);
 router.post('/', machineController.createMachine);
+router.post('/:id/status', authenticateToken, machineController.updateMachineStatus);
 router.put('/:id', machineController.updateMachine);
 router.delete('/plans/:planId', machineController.deleteMachinePMPlan);
 router.delete('/:id', machineController.deleteMachine);

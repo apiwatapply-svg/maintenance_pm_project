@@ -1011,7 +1011,7 @@ git commit -m "feat: add socket event foundation"
 - Modify: `frontend/my-app/src/app/page.tsx` or create `frontend/my-app/src/features/dashboard/*`
 - Create: `tests/unit/oee.service.test.js`
 
-- [ ] **Step 1: Add OEE service tests**
+- [x] **Step 1: Add OEE service tests**
 
 Create `tests/unit/oee.service.test.js`:
 
@@ -1028,7 +1028,7 @@ test("calculates oee from availability performance and quality", () => {
 });
 ```
 
-- [ ] **Step 2: Implement OEE service**
+- [x] **Step 2: Implement OEE service**
 
 Create `backend/services/oee.service.js`:
 
@@ -1050,7 +1050,7 @@ function calculateOee({ availability, performance, quality }) {
 module.exports = { calculateOee };
 ```
 
-- [ ] **Step 3: Emit dashboard events after machine status changes**
+- [x] **Step 3: Emit dashboard events after machine status changes**
 
 In `backend/controllers/machineController.js`, after status-changing writes, emit:
 
@@ -1064,7 +1064,7 @@ req.io.emit("machine:status:update", {
 });
 ```
 
-- [ ] **Step 4: Create simulator**
+- [x] **Step 4: Create simulator**
 
 Create `backend/scripts/machine_status_simulator.js`:
 

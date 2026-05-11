@@ -1,4 +1,26 @@
 const prisma = require('../prismaClient');
+const { buildMachineStatusSnapshot } = require('../services/oee.service');
+const { buildSocketPayload, emitFeatureEvent } = require('../services/socket.service');
+
+function emitMachineStatusUpdate(req, snapshot) {
+    if (!req.io) {
+        return;
+    }
+
+    const payload = buildSocketPayload({
+        event: 'machine:status:update',
+        actor: req.user,
+        data: snapshot,
+        meta: {
+            feature: 'machine',
+            machine_id: snapshot.machine.id
+        }
+    });
+
+    emitFeatureEvent(req.io, 'global', payload);
+    req.io.emit('machine_update', { action: 'status_update', machineId: snapshot.machine.id });
+    req.io.emit('dashboard_update');
+}
 
 // Get all machines
 // Get all machines
@@ -360,6 +382,36 @@ exports.updateMachine = async (req, res) => {
         }
 
         res.json(machine);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+exports.updateMachineStatus = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const machine = await prisma.machine.findUnique({
+            where: { id: parseInt(id) },
+            select: {
+                id: true,
+                code: true,
+                name: true,
+                location: true
+            }
+        });
+
+        if (!machine) {
+            return res.status(404).json({ error: 'Machine not found' });
+        }
+
+        const snapshot = buildMachineStatusSnapshot(machine, req.body);
+        emitMachineStatusUpdate(req, snapshot);
+
+        res.json({
+            success: true,
+            data: snapshot,
+            message: 'Machine status snapshot emitted'
+        });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
