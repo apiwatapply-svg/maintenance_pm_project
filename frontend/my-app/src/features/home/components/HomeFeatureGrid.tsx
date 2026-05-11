@@ -44,8 +44,8 @@ export function HomeFeatureGrid() {
     <section className="mb-4">
       <div className="d-flex align-items-end justify-content-between gap-3 mb-3">
         <div>
-          <h1 className="h4 fw-bold mb-1">Maintenance PM Portal</h1>
-          <p className="text-muted mb-0">Open each maintenance workspace based on your permissions.</p>
+          <h1 className="h4 fw-bold mb-1">Maintenance Main Modules</h1>
+          <p className="text-muted mb-0">Choose a main card first, then work inside each module.</p>
         </div>
       </div>
       <div className="row g-3">

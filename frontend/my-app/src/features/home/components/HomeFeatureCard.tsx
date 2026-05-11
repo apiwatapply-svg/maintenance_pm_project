@@ -13,6 +13,7 @@ const featureIcons: Record<string, string> = {
   preventive: "bi-clipboard-check",
   job_request: "bi-lightning-charge",
   work_order: "bi-kanban",
+  tool_store: "bi-boxes",
   tooling: "bi-tools",
   spare_part: "bi-box-seam",
   analysis: "bi-graph-up",
@@ -40,7 +41,7 @@ export function HomeFeatureCard({ feature }: Props) {
             </span>
             <h2 className="h6 fw-bold mb-0">{feature.title}</h2>
           </div>
-          {feature.future && <span className="badge text-bg-warning">Coming Soon</span>}
+          {feature.future && <span className="badge text-bg-warning">Upcoming</span>}
           {locked && !feature.future && <span className="badge text-bg-secondary">Locked</span>}
         </div>
 
@@ -64,7 +65,7 @@ export function HomeFeatureCard({ feature }: Props) {
             </button>
           ) : (
             <Link className={`btn btn-sm w-100 ${feature.future ? "btn-outline-warning" : "btn-primary"}`} href={href}>
-              Open
+              {feature.future ? "Preview" : "Open"}
             </Link>
           )}
         </div>
