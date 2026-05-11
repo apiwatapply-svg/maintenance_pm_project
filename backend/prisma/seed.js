@@ -1,4 +1,5 @@
 const { PrismaClient } = require('@prisma/client');
+const { determineDefaultAppRoleKeys } = require('../services/permission.service');
 const prisma = new PrismaClient();
 
 const featureDefinitions = [
@@ -81,6 +82,7 @@ function roleAllows(roleDefinition, featureKey, action) {
 
 async function seedFeaturePermissions() {
     const permissionsByKey = new Map();
+    const rolesByKey = new Map();
 
     for (const [featureKey, title, routePath, enabled, future, sortOrder] of featureDefinitions) {
         const feature = await prisma.appFeature.upsert({
@@ -139,6 +141,7 @@ async function seedFeaturePermissions() {
                 isSystem: roleDefinition.isSystem,
             },
         });
+        rolesByKey.set(roleDefinition.roleKey, role);
 
         for (const [featureKey] of featureDefinitions) {
             for (const action of permissionActions) {
@@ -163,6 +166,31 @@ async function seedFeaturePermissions() {
                     },
                 });
             }
+        }
+    }
+
+    const users = await prisma.userMaster.findMany({
+        select: { id: true, role: true, systemRole: true },
+    });
+
+    for (const user of users) {
+        for (const roleKey of determineDefaultAppRoleKeys(user)) {
+            const role = rolesByKey.get(roleKey);
+            if (!role) continue;
+
+            await prisma.appUserRole.upsert({
+                where: {
+                    userId_roleId: {
+                        userId: user.id,
+                        roleId: role.id,
+                    },
+                },
+                update: {},
+                create: {
+                    userId: user.id,
+                    roleId: role.id,
+                },
+            });
         }
     }
 

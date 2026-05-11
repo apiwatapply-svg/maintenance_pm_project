@@ -6,7 +6,7 @@ async function main() {
     const adminPassword = 'password123'; // Change this!
 
     // Check if admin exists
-    const existingAdmin = await prisma.userMaster.findUnique({
+    const existingAdmin = await prisma.userMaster.findFirst({
         where: { username: adminUsername },
     });
 

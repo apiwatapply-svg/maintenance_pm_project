@@ -1,6 +1,6 @@
 const prisma = require("../prismaClient");
 const { loadUserPermissionMap } = require("../middleware/permissionMiddleware");
-const { hasPermission } = require("../services/permission.service");
+const { canBypassPermission, hasPermission } = require("../services/permission.service");
 const { buildHomeFeatureResponse } = require("../services/homeFeature.service");
 
 exports.getFeatures = async (req, res, next) => {
@@ -10,7 +10,9 @@ exports.getFeatures = async (req, res, next) => {
       orderBy: { sortOrder: "asc" },
     });
 
-    const data = buildHomeFeatureResponse(features, permissionMap, hasPermission);
+    const checkPermission = (map, featureKey, action) =>
+      canBypassPermission(req.user) || hasPermission(map, featureKey, action);
+    const data = buildHomeFeatureResponse(features, permissionMap, checkPermission);
 
     res.json({ success: true, data, message: "OK" });
   } catch (error) {

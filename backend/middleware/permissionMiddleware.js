@@ -1,5 +1,10 @@
 const prisma = require("../prismaClient");
-const { mergePermissions, hasPermission } = require("../services/permission.service");
+const {
+  canBypassPermission,
+  hasAnyPermission,
+  hasPermission,
+  mergePermissions,
+} = require("../services/permission.service");
 
 async function loadUserPermissionMap(userId) {
   const userRoles = await prisma.appUserRole.findMany({
@@ -56,6 +61,11 @@ function requirePermission(featureKey, action) {
         });
       }
 
+      if (canBypassPermission(req.user)) {
+        req.permissions = {};
+        return next();
+      }
+
       const permissions = await loadUserPermissionMap(req.user.id);
 
       if (!hasPermission(permissions, featureKey, action)) {
@@ -91,10 +101,13 @@ function requireAnyPermission(requiredPermissions) {
         });
       }
 
+      if (canBypassPermission(req.user)) {
+        req.permissions = {};
+        return next();
+      }
+
       const permissions = await loadUserPermissionMap(req.user.id);
-      const allowed = requiredPermissions.some(([featureKey, action]) =>
-        hasPermission(permissions, featureKey, action)
-      );
+      const allowed = hasAnyPermission(permissions, requiredPermissions);
 
       if (!allowed) {
         return res.status(403).json({
