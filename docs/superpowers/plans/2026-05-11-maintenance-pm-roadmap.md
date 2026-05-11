@@ -473,7 +473,7 @@ git commit -m "feat: add feature permission model"
 - Modify: `backend/server.js`
 - Create: `docs/api/home-permissions.md`
 
-- [ ] **Step 1: Implement middleware contract**
+- [x] **Step 1: Implement middleware contract**
 
 Create `backend/middleware/permissionMiddleware.js`:
 
@@ -555,7 +555,7 @@ module.exports = {
 };
 ```
 
-- [ ] **Step 2: Implement `/api/home/features`**
+- [x] **Step 2: Implement `/api/home/features`**
 
 Create `backend/controllers/homeController.js`:
 
@@ -595,7 +595,7 @@ exports.getFeatures = async (req, res, next) => {
 };
 ```
 
-- [ ] **Step 3: Add route and mount**
+- [x] **Step 3: Add route and mount**
 
 Create `backend/routes/homeRoutes.js`:
 
@@ -616,7 +616,7 @@ Modify `backend/server.js`:
 app.use("/api/home", require("./routes/homeRoutes"));
 ```
 
-- [ ] **Step 4: Document API**
+- [x] **Step 4: Document API**
 
 Create `docs/api/home-permissions.md` with the exact response shape:
 
@@ -647,7 +647,7 @@ Create `docs/api/home-permissions.md` with the exact response shape:
 }
 ```
 
-- [ ] **Step 5: Commit backend home permissions**
+- [x] **Step 5: Commit backend home permissions**
 
 Run:
 
