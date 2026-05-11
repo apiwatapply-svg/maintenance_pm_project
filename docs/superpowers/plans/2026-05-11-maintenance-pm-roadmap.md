@@ -110,6 +110,10 @@ export
 admin
 ```
 
+## Development Rule: Unit Tests Travel With Code
+
+Every new backend service, business rule, permission check, status transition, calculation, scheduler helper, and validation helper must be added with unit tests in the same task. Do not defer unit tests to the hardening phase when the code contains testable logic. The hardening phase is for broader API, Socket.IO, E2E, UAT, and regression coverage.
+
 ---
 
 ### Task 1: Repository And Baseline Stabilization
@@ -120,7 +124,7 @@ admin
 - Create: `docs/requirements/current-baseline.md`
 - Create: `docs/test-plan/baseline-verification.md`
 
-- [ ] **Step 1: Confirm branch and clean state**
+- [x] **Step 1: Confirm branch and clean state**
 
 Run:
 
@@ -136,7 +140,7 @@ Expected:
 
 No modified source files should appear before implementation starts.
 
-- [ ] **Step 2: Verify frontend production build**
+- [x] **Step 2: Verify frontend production build**
 
 Run:
 
@@ -151,7 +155,7 @@ Expected:
 Compiled successfully
 ```
 
-- [ ] **Step 3: Record current lint baseline**
+- [x] **Step 3: Record current lint baseline**
 
 Run:
 
@@ -162,7 +166,7 @@ npm.cmd run lint
 
 Expected current result: lint fails because the existing codebase has many `@typescript-eslint/no-explicit-any`, React hook immutability, and public vendor JS warnings. Capture the top error groups in `docs/test-plan/baseline-verification.md`.
 
-- [ ] **Step 4: Document baseline**
+- [x] **Step 4: Document baseline**
 
 Add `docs/requirements/current-baseline.md` with:
 
@@ -183,7 +187,7 @@ Add `docs/requirements/current-baseline.md` with:
 - Job Request, Work Order, Tooling, Spare Parts, 3D View, and Predictive Future placeholder are not fully implemented as required.
 ```
 
-- [ ] **Step 5: Commit baseline documentation**
+- [x] **Step 5: Commit baseline documentation**
 
 Run:
 

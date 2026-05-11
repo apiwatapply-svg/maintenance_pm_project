@@ -155,3 +155,11 @@ The system consists of the following main functions:
 - Copy `.env.example` files to `.env` in each app/tool folder before running locally.
 - Do not commit `.env`, generated uploads, local virtual environments, logs, certificates, or private keys.
 - The active app folders are `backend/` and `frontend/my-app/`; helper scripts are grouped under `tools/` and `tests/`.
+
+## 7. Development Roadmap
+
+- Requirement source: `docs/requirements/maintenance_pm_project_plan.md`
+- Task summary: `docs/requirements/maintenance-pm-task-summary.md`
+- Implementation plan: `docs/superpowers/plans/2026-05-11-maintenance-pm-roadmap.md`
+- Current baseline: `docs/requirements/current-baseline.md`
+- Baseline verification: `docs/test-plan/baseline-verification.md`

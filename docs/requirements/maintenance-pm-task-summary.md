@@ -31,6 +31,12 @@ This file summarizes the full requirement into followable task groups. The detai
 15. Notification center and audit logs.
 16. Test plans, UAT checklist, and deployment hardening.
 
+## Development Rule
+
+- Write unit tests alongside implementation for every new service, business rule, validation helper, calculation, permission rule, and status transition.
+- Do not postpone unit tests for backend logic to the final hardening phase.
+- Keep build verification at every checkpoint, and add broader API/Socket.IO/E2E tests during hardening.
+
 ## Must Not Build Now
 
 - Predictive rule engine.
