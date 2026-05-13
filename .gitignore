@@ -9,6 +9,7 @@ __pycache__/
 
 # Testing
 coverage/
+test-results/
 
 # Production
 build/
