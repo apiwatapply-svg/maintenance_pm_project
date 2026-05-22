@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import axios from "axios";
 import config from "../../config";
 import {
@@ -15,11 +15,7 @@ export default function OperatorAnalysisPage() {
     const currentYear = new Date().getFullYear();
     const years = Array.from({ length: 7 }, (_, i) => (currentYear - 5 + i).toString());
 
-    useEffect(() => {
-        fetchData();
-    }, [selectedYear]);
-
-    const fetchData = () => {
+    const fetchData = useCallback(() => {
         setLoading(true);
         axios.get(`${config.apiServer}/api/pm/analysis/operator?year=${selectedYear}`)
             .then(res => {
@@ -30,7 +26,11 @@ export default function OperatorAnalysisPage() {
                 console.error(err);
                 setLoading(false);
             });
-    };
+    }, [selectedYear]);
+
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
 
     if (loading) {
         return (

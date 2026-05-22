@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import axios from "axios";
 import config from "../../config";
 import {
@@ -17,11 +17,7 @@ export default function MachineAnalysisPage() {
     const currentYear = new Date().getFullYear();
     const years = Array.from({ length: 8 }, (_, i) => (currentYear - 5 + i).toString());
 
-    useEffect(() => {
-        fetchData();
-    }, [selectedYear]);
-
-    const fetchData = () => {
+    const fetchData = useCallback(() => {
         setLoading(true);
         axios.get(`${config.apiServer}/api/pm/analysis/machine?year=${selectedYear}`)
             .then(res => {
@@ -32,7 +28,11 @@ export default function MachineAnalysisPage() {
                 console.error(err);
                 setLoading(false);
             });
-    };
+    }, [selectedYear]);
+
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
 
     const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
     const STATUS_COLORS: any = {

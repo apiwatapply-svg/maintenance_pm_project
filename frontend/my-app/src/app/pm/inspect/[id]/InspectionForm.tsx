@@ -353,8 +353,6 @@ export default function InspectionForm() {
           }
         });
 
-        console.log('[DEBUG] Restored subItemDetails from record:', restoredSubItemDetails);
-
         // [FIX] Build alignedDetails that maps 1:1 with masterChecklists (= checklists array in render)
         const allMasterChecklists = record.preventiveType?.masterChecklists
           || record.machine?.checklists || [];
@@ -500,9 +498,6 @@ export default function InspectionForm() {
             }
           });
 
-          console.log('[DEBUG] Initializing subItemDetails:', JSON.stringify(initialSubItemDetails, null, 2));
-          console.log('[DEBUG] initialSubItemDetails keys:', Object.keys(initialSubItemDetails));
-
           setFormData((prev) => ({ ...prev, details: initialDetails, subItemDetails: initialSubItemDetails } as any));
         }
       })
@@ -607,7 +602,6 @@ export default function InspectionForm() {
         const parsed = JSON.parse(checklist.options);
         if (parsed.parentId && parsed.conditions) {
           const parentDetail = currentDetails.find(d => String(d.checklistId) === String(parsed.parentId));
-          console.log(`[DEBUG resolveMinMax] checklistId: ${checklist.id}, topic: ${checklist.topic}, parentId: ${parsed.parentId}, parentValue: ${parentDetail?.value}`, parsed.conditions);
           if (parentDetail && parentDetail.value) {
             const condition = parsed.conditions[parentDetail.value];
             if (condition) {
@@ -875,11 +869,6 @@ export default function InspectionForm() {
           status = pmRecord.status || "COMPLETED";
         }
 
-        console.log('[DEBUG] Calculated Status:', status, 'TargetDueDate:', targetDueDate);
-
-        console.log('[DEBUG] Before Submit - formData.subItemDetails:', (formData as any).subItemDetails);
-        console.log('[DEBUG] Before Submit - selectedTypeId:', selectedTypeId);
-
         const payload = {
           machineId: machine?.id,
           inspector: formData.inspector,
@@ -909,8 +898,6 @@ export default function InspectionForm() {
           preventiveTypeId: selectedTypeId, // Include selected type
           subItemDetails: (formData as any).subItemDetails || {} // [FIX] Include sub-item details
         };
-
-        console.log('[DEBUG] Payload subItemDetails:', payload.subItemDetails);
 
         const apiCall = isEditMode
           ? axios.put(`${config.apiServer}/api/pm/records/${params.id}`, payload)
@@ -1231,7 +1218,7 @@ export default function InspectionForm() {
                           <tr key={checklist.id}>
                             <td className="fw-bold bg-light align-middle">
                               <i className="bi bi-check2-square me-2 text-primary"></i>
-                              {checklist.topic} <span className="text-danger" style={{ fontSize: '0.6rem' }}>DEBUG: {checklist.options}</span>
+                              {checklist.topic}
                               {(checklist.minVal !== null && checklist.minVal !== undefined && checklist.maxVal !== null && checklist.maxVal !== undefined) && (
                                 <small className="text-muted d-block" style={{ fontSize: '0.65rem' }}>Spec: {checklist.minVal} - {checklist.maxVal}</small>
                               )}

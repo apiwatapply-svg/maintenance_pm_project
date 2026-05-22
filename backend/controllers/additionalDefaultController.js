@@ -1,6 +1,10 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
+const canAccessMachine = (req, machineId) => {
+    return !req.assignedMachineIds || req.assignedMachineIds.includes(parseInt(machineId));
+};
+
 /**
  * GET /api/additional-defaults/:machineId/:typeId
  * Get all default values for a specific machine and PM type
@@ -8,6 +12,10 @@ const prisma = new PrismaClient();
 exports.getDefaults = async (req, res) => {
     try {
         const { machineId, typeId } = req.params;
+
+        if (!canAccessMachine(req, machineId)) {
+            return res.status(403).json({ error: 'Access denied to this machine' });
+        }
 
         const defaults = await prisma.additionalDetailDefault.findMany({
             where: {
@@ -34,6 +42,10 @@ exports.saveDefaults = async (req, res) => {
 
         if (!machineId || !preventiveTypeId || !textDefaults || !Array.isArray(textDefaults)) {
             return res.status(400).json({ error: 'Missing required fields' });
+        }
+
+        if (!canAccessMachine(req, machineId)) {
+            return res.status(403).json({ error: 'Access denied to this machine' });
         }
 
         const results = [];

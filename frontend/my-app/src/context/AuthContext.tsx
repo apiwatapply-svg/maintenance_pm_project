@@ -1,5 +1,5 @@
 "use client";
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import axios from 'axios';
 import config from '../app/config';
@@ -39,6 +39,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const router = useRouter();
     const pathname = usePathname();
 
+    const logout = useCallback(() => {
+        localStorage.removeItem('token');
+        setToken(null);
+        setUser(null);
+        // Remove default header
+        delete axios.defaults.headers.common['Authorization'];
+        router.push('/login');
+    }, [router]);
+
     useEffect(() => {
         // Load token from localStorage
         const storedToken = localStorage.getItem('token');
@@ -64,7 +73,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         } else {
             setLoading(false);
         }
-    }, []);
+    }, [logout]);
 
     const login = (newToken: string, newUser: User) => {
         localStorage.setItem('token', newToken);
@@ -73,15 +82,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         // Set default header
         axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
         router.push('/');
-    };
-
-    const logout = () => {
-        localStorage.removeItem('token');
-        setToken(null);
-        setUser(null);
-        // Remove default header
-        delete axios.defaults.headers.common['Authorization'];
-        router.push('/login');
     };
 
     // Protect Routes
@@ -93,7 +93,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 router.push('/');
             }
         }
-    }, [user, loading, pathname]);
+    }, [user, loading, pathname, router]);
 
     return (
         <AuthContext.Provider value={{ user, token, login, logout, isAuthenticated: !!user, loading }}>

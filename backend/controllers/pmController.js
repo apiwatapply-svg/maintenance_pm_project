@@ -18,6 +18,104 @@ const isDetailNG = (detail, masterChecklist = null) => {
     return !detail.isPass;
 };
 
+const startOfDay = (input) => {
+    const date = new Date(input);
+    date.setHours(0, 0, 0, 0);
+    return date;
+};
+
+const addDays = (input, days) => {
+    const date = new Date(input);
+    date.setDate(date.getDate() + days);
+    return date;
+};
+
+const getStatusForCompletionDate = (completionDate, dueDate, fallbackStatus) => {
+    if (!completionDate || !dueDate) return fallbackStatus;
+    return startOfDay(completionDate) > startOfDay(dueDate) ? 'LATE' : 'COMPLETED';
+};
+
+const calculateNextPMDate = ({ plan, preventiveType, latestRecord }) => {
+    if (!plan || !latestRecord || plan.frequencyDays <= 0) {
+        return null;
+    }
+
+    const completionDate = latestRecord.date ? new Date(latestRecord.date) : new Date();
+    const isFixedDate = preventiveType ? preventiveType.isFixedDate : true;
+    const postponeLogic = preventiveType ? preventiveType.postponeLogic : 'SHIFT';
+
+    let baseDate = completionDate;
+
+    if (isFixedDate && postponeLogic === 'MAINTAIN_CYCLE') {
+        baseDate = latestRecord.dueDate ? new Date(latestRecord.dueDate) : completionDate;
+    }
+
+    return addDays(baseDate, plan.frequencyDays);
+};
+
+const recalculatePlanFromLatestRecord = async (machineId, preventiveTypeId) => {
+    if (!machineId || !preventiveTypeId) return;
+
+    const parsedMachineId = parseInt(machineId);
+    const parsedPreventiveTypeId = parseInt(preventiveTypeId);
+
+    const plan = await prisma.machinePMPlan.findUnique({
+        where: {
+            machineId_preventiveTypeId: {
+                machineId: parsedMachineId,
+                preventiveTypeId: parsedPreventiveTypeId
+            }
+        },
+        include: { preventiveType: true }
+    });
+
+    if (!plan) return;
+
+    const latestRecord = await prisma.pMRecord.findFirst({
+        where: {
+            machineId: parsedMachineId,
+            preventiveTypeId: parsedPreventiveTypeId,
+            status: { in: ['COMPLETED', 'LATE'] }
+        },
+        orderBy: [
+            { date: 'desc' },
+            { id: 'desc' }
+        ],
+        include: {
+            details: {
+                include: { masterChecklist: true }
+            }
+        }
+    });
+
+    if (!latestRecord) {
+        await prisma.machinePMPlan.update({
+            where: { id: plan.id },
+            data: {
+                lastPMDate: null,
+                lastCheckStatus: null
+            }
+        });
+        return;
+    }
+
+    const hasNG = latestRecord.details.some(d => isDetailNG(d, d.masterChecklist));
+    const nextPMDate = calculateNextPMDate({
+        plan,
+        preventiveType: plan.preventiveType,
+        latestRecord
+    });
+
+    await prisma.machinePMPlan.update({
+        where: { id: plan.id },
+        data: {
+            lastPMDate: latestRecord.date,
+            nextPMDate,
+            lastCheckStatus: hasNG ? 'HAS_NG' : 'ALL_OK'
+        }
+    });
+};
+
 // Get PM Schedule/Records for Calendar
 exports.getSchedule = async (req, res) => {
     try {
@@ -164,11 +262,25 @@ exports.recordPM = async (req, res) => {
     try {
         const { machineId, inspector, checker, status, remark, details, preventiveTypeId } = req.body;
 
+        if (req.assignedMachineIds && !req.assignedMachineIds.includes(parseInt(machineId))) {
+            return res.status(403).json({ error: 'Access denied to this machine' });
+        }
+
+        if (req.assignedMachineIds) {
+            const user = await prisma.userMaster.findUnique({
+                where: { id: req.user.id },
+                select: { permissionType: true }
+            });
+
+            if (user?.permissionType === 'RESCHEDULE_ONLY') {
+                return res.status(403).json({ error: 'Access denied. PM submission is not allowed for this user.' });
+            }
+        }
+
         // [NEW] Combine standard details with subItemDetails FIRST
         const allDetails = [...details];
 
         // [NEW] Convert subItemDetails object to array format
-        console.log('[DEBUG] subItemDetails received:', JSON.stringify(req.body.subItemDetails, null, 2));
         if (req.body.subItemDetails) {
             const subItemDetailsObj = req.body.subItemDetails;
             for (const key in subItemDetailsObj) {
@@ -376,6 +488,8 @@ exports.recordPM = async (req, res) => {
                     where: { id: plan.id },
                     data: updateData
                 });
+
+                await recalculatePlanFromLatestRecord(parseInt(machineId), parseInt(preventiveTypeId));
             }
         } else {
             // Fallback for legacy (if no type provided), maybe try to update FIRST plan found?
@@ -397,6 +511,19 @@ exports.recordPM = async (req, res) => {
 exports.deleteRecord = async (req, res) => {
     try {
         const { id } = req.params;
+        const record = await prisma.pMRecord.findUnique({
+            where: { id: parseInt(id) },
+            select: { machineId: true }
+        });
+
+        if (!record) {
+            return res.status(404).json({ error: 'Record not found' });
+        }
+
+        if (req.assignedMachineIds && !req.assignedMachineIds.includes(record.machineId)) {
+            return res.status(403).json({ error: 'Access denied to this machine' });
+        }
+
         await prisma.pMRecord.delete({ where: { id: parseInt(id) } });
 
         if (req.io) {
@@ -459,6 +586,10 @@ exports.getRecord = async (req, res) => {
 
         if (!record) {
             return res.status(404).json({ error: 'PM Record not found' });
+        }
+
+        if (req.assignedMachineIds && !req.assignedMachineIds.includes(record.machineId)) {
+            return res.status(403).json({ error: 'Access denied to this machine' });
         }
 
         res.json(record);
@@ -628,19 +759,29 @@ exports.updateRecord = async (req, res) => {
         const { id } = req.params;
         const { inspector, checker, status, remark, details, subItemDetails, date } = req.body;
 
+        const existingRecord = await prisma.pMRecord.findUnique({
+            where: { id: parseInt(id) },
+            select: {
+                machineId: true,
+                preventiveTypeId: true,
+                dueDate: true,
+                status: true
+            }
+        });
+
+        if (!existingRecord) return res.status(404).json({ error: 'Record not found' });
+
         // [RBAC] Verify access to record's machine
         if (req.assignedMachineIds) {
-            const record = await prisma.pMRecord.findUnique({
-                where: { id: parseInt(id) },
-                select: { machineId: true }
-            });
-
-            if (!record) return res.status(404).json({ error: 'Record not found' });
-
-            if (!req.assignedMachineIds.includes(record.machineId)) {
+            if (!req.assignedMachineIds.includes(existingRecord.machineId)) {
                 return res.status(403).json({ error: 'Access denied' });
             }
         }
+
+        const completionDate = date ? new Date(date) : undefined;
+        const recalculatedStatus = completionDate
+            ? getStatusForCompletionDate(completionDate, existingRecord.dueDate, status)
+            : status;
 
         // Update record
         const record = await prisma.pMRecord.update({
@@ -648,9 +789,9 @@ exports.updateRecord = async (req, res) => {
             data: {
                 inspector,
                 checker,
-                status,
+                status: recalculatedStatus,
                 remark,
-                ...(date ? { date: new Date(date) } : {})
+                ...(date ? { date: completionDate } : {})
             },
             select: {
                 id: true,
@@ -667,7 +808,6 @@ exports.updateRecord = async (req, res) => {
         const allDetails = [...details];
 
         if (subItemDetails) {
-            console.log('[DEBUG] updateRecord subItemDetails received:', JSON.stringify(subItemDetails, null, 2));
             for (const key in subItemDetails) {
                 const sub = subItemDetails[key];
                 if (sub.checklistId && sub.subItemName !== undefined) {
@@ -703,32 +843,8 @@ exports.updateRecord = async (req, res) => {
             }))
         });
 
-        // [FIX] Update MachinePMPlan.lastCheckStatus to sync with Dashboard
-        const checklistIds = [...new Set(allDetails.map(d => d.checklistId))];
-        const masters = await prisma.masterChecklist.findMany({
-            where: { id: { in: checklistIds } },
-            select: { id: true, type: true }
-        });
-        const typeMap = new Map(masters.map(m => [m.id, m.type]));
-
-        // [FIX] Use helper to skip ghost items
-        const hasNG = allDetails.some(d => {
-            const type = typeMap.get(d.checklistId);
-            return isDetailNG(d, { type });
-        });
-        const newLastCheckStatus = hasNG ? 'HAS_NG' : 'ALL_OK';
-
-        // Find and update the PM Plan for this machine and preventive type
         if (record.preventiveTypeId) {
-            await prisma.machinePMPlan.updateMany({
-                where: {
-                    machineId: record.machineId,
-                    preventiveTypeId: record.preventiveTypeId
-                },
-                data: {
-                    lastCheckStatus: newLastCheckStatus
-                }
-            });
+            await recalculatePlanFromLatestRecord(record.machineId, record.preventiveTypeId);
         }
 
         if (req.io) {

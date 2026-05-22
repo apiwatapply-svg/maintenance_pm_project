@@ -78,41 +78,44 @@ exports.getMachineById = async (req, res) => {
             }
         });
 
+        if (!machine) return res.status(404).json({ error: 'Machine not found' });
+
+        if (req.assignedMachineIds && !req.assignedMachineIds.includes(machine.id)) {
+            return res.status(403).json({ error: 'Access denied to this machine' });
+        }
+
         // Normalize response: if we fetched checklistTemplates, also expose as 'checklists'
-        if (machine) {
-            machine.checklists = machine.checklistTemplates || [];
+        machine.checklists = machine.checklistTemplates || [];
 
-            // [NEW] Query last PM record for this machine to get previous values
-            const lastRecordWhere = { machineId: parseInt(id) };
-            if (typeId) {
-                lastRecordWhere.preventiveTypeId = parseInt(typeId);
+        // [NEW] Query last PM record for this machine to get previous values
+        const lastRecordWhere = { machineId: parseInt(id) };
+        if (typeId) {
+            lastRecordWhere.preventiveTypeId = parseInt(typeId);
+        }
+
+        const lastRecord = await prisma.pMRecord.findFirst({
+            where: lastRecordWhere,
+            orderBy: { date: 'desc' },
+            include: {
+                details: {
+                    select: { checklistId: true, value: true, subItemName: true }
+                }
             }
+        });
 
-            const lastRecord = await prisma.pMRecord.findFirst({
-                where: lastRecordWhere,
-                orderBy: { date: 'desc' },
-                include: {
-                    details: {
-                        select: { checklistId: true, value: true, subItemName: true }
-                    }
+        // Map to { checklistId: value } or { checklistId_subItemIndex: value }
+        machine.lastPMValues = {};
+        machine.lastPMDate = lastRecord?.date || null; // [NEW] Return date of last PM
+        if (lastRecord?.details) {
+            lastRecord.details.forEach(d => {
+                if (d.subItemName) {
+                    // For sub-items: use checklistId_subItemName as key
+                    machine.lastPMValues[`${d.checklistId}_${d.subItemName}`] = d.value;
+                } else if (d.checklistId) {
+                    machine.lastPMValues[d.checklistId] = d.value;
                 }
             });
-
-            // Map to { checklistId: value } or { checklistId_subItemIndex: value }
-            machine.lastPMValues = {};
-            machine.lastPMDate = lastRecord?.date || null; // [NEW] Return date of last PM
-            if (lastRecord?.details) {
-                lastRecord.details.forEach(d => {
-                    if (d.subItemName) {
-                        // For sub-items: use checklistId_subItemName as key
-                        machine.lastPMValues[`${d.checklistId}_${d.subItemName}`] = d.value;
-                    } else if (d.checklistId) {
-                        machine.lastPMValues[d.checklistId] = d.value;
-                    }
-                });
-            }
         }
-        if (!machine) return res.status(404).json({ error: 'Machine not found' });
         res.json(machine);
     } catch (error) {
         res.status(500).json({ error: error.message });

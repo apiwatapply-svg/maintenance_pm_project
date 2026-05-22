@@ -117,6 +117,7 @@ interface Machine {
 interface PMRecord {
   id: number;
   date: string;
+  dueDate?: string;
   inspector: string;
   checker: string;
   status: string;
@@ -310,8 +311,6 @@ export default function InspectionForm() {
           }
         });
 
-        console.log('[DEBUG] Restored subItemDetails from record:', restoredSubItemDetails);
-
         // [FIX] Build alignedDetails that maps 1:1 with masterChecklists (= checklists array in render)
         const allMasterChecklists = record.preventiveType?.masterChecklists
           || record.machine?.checklists || [];
@@ -456,9 +455,6 @@ export default function InspectionForm() {
               } catch { /* ignore parse errors */ }
             }
           });
-
-          console.log('[DEBUG] Initializing subItemDetails:', JSON.stringify(initialSubItemDetails, null, 2));
-          console.log('[DEBUG] initialSubItemDetails keys:', Object.keys(initialSubItemDetails));
 
           setFormData((prev) => ({ ...prev, details: initialDetails, subItemDetails: initialSubItemDetails } as any));
         }
@@ -778,21 +774,26 @@ export default function InspectionForm() {
       if (result.isConfirmed) {
         const allPass = formData.details.every(d => d.isPass);
 
-        // Calculate status based on Due Date (nextPMDate from plan)
         let status = "COMPLETED";
-        if (currentPlan?.nextPMDate) {
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
-          const dueDate = new Date(currentPlan.nextPMDate);
-          dueDate.setHours(0, 0, 0, 0);
+        let targetDueDate: Date | null = null;
 
-          if (today > dueDate) {
-            status = "LATE";
-          }
+        if (isEditMode && pmRecord?.dueDate) {
+          targetDueDate = new Date(pmRecord.dueDate);
+        } else if (!isEditMode && currentPlan?.nextPMDate) {
+          targetDueDate = new Date(currentPlan.nextPMDate);
         }
 
-        console.log('[DEBUG] Before Submit - formData.subItemDetails:', (formData as any).subItemDetails);
-        console.log('[DEBUG] Before Submit - selectedTypeId:', selectedTypeId);
+        if (targetDueDate) {
+          const compareDate = (isEditMode && editDate) ? new Date(editDate) : new Date();
+          compareDate.setHours(0, 0, 0, 0);
+          targetDueDate.setHours(0, 0, 0, 0);
+
+          if (compareDate > targetDueDate) {
+            status = "LATE";
+          }
+        } else if (isEditMode && pmRecord) {
+          status = pmRecord.status || "COMPLETED";
+        }
 
         const payload = {
           machineId: machine?.id,
@@ -823,8 +824,6 @@ export default function InspectionForm() {
           preventiveTypeId: selectedTypeId, // Include selected type
           subItemDetails: (formData as any).subItemDetails || {} // [FIX] Include sub-item details
         };
-
-        console.log('[DEBUG] Payload subItemDetails:', payload.subItemDetails);
 
         const apiCall = isEditMode
           ? axios.put(`${config.apiServer}/api/pm/records/${params.id}`, payload)

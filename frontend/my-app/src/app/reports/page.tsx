@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, Suspense, useRef } from "react";
+import { useCallback, useEffect, useState, Suspense, useRef } from "react";
 import axios from "axios";
 import config from "../config";
 import { useSearchParams } from "next/navigation";
@@ -24,6 +24,7 @@ interface PMRecord {
 
 function ReportsContent() {
     const searchParams = useSearchParams();
+    const machineIdParam = searchParams.get("machineId");
     const [records, setRecords] = useState<PMRecord[]>([]);
     const [filters, setFilters] = useState({
         startDate: "",
@@ -42,49 +43,18 @@ function ReportsContent() {
     // [FIX BUG-3] Use ref to prevent the second useEffect from firing before init is complete
     const isInitialized = useRef(false);
 
-    useEffect(() => {
-        if (authLoading || !isAuthenticated) return;
-
-        // Set default date range to last 1 year
-        const end = new Date();
-        const start = new Date();
-        start.setFullYear(end.getFullYear() - 1);
-
-        // [FIX BUG-3] Merge ALL filter changes into a single setFilters call
-        // Previously: two separate setFilters calls → triggered useEffect #2 twice
-        const machineIdParam = searchParams.get("machineId");
-        setFilters(prev => ({
-            ...prev,
-            startDate: start.toISOString().split('T')[0],
-            endDate: end.toISOString().split('T')[0],
-            ...(machineIdParam ? { machineId: machineIdParam } : {})
-        }));
-
-        isInitialized.current = true;
-        fetchMachines();
-        fetchDropdownData();
-    }, [authLoading, isAuthenticated]); // [FIX BUG-3] removed searchParams — machineId is now read inside
-
-    useEffect(() => {
-        // [FIX BUG-3] Skip if not yet initialized — prevents firing during first render
-        if (!isInitialized.current) return;
-        if (filters.startDate && filters.endDate) {
-            fetchReports();
-        }
-    }, [filters]);
-
-    const fetchMachines = () => {
+    const fetchMachines = useCallback(() => {
         axios.get(`${config.apiServer}/api/machines/dropdown`)
             .then(res => setMachines(res.data))
             .catch(err => console.error(err));
-    };
+    }, []);
 
-    const fetchDropdownData = () => {
+    const fetchDropdownData = useCallback(() => {
         axios.get(`${config.apiServer}/api/areas`).then(res => setAreas(res.data)).catch(console.error);
         axios.get(`${config.apiServer}/api/machine-types`).then(res => setMachineTypes(res.data)).catch(console.error);
-    };
+    }, []);
 
-    const fetchReports = () => {
+    const fetchReports = useCallback(() => {
         const params = new URLSearchParams();
         if (filters.startDate) params.append("startDate", filters.startDate);
         if (filters.endDate) params.append("endDate", filters.endDate);
@@ -106,7 +76,37 @@ function ReportsContent() {
                 setRecords(data);
             })
             .catch(err => console.error(err));
-    };
+    }, [filters]);
+
+    useEffect(() => {
+        if (authLoading || !isAuthenticated) return;
+
+        // Set default date range to last 1 year
+        const end = new Date();
+        const start = new Date();
+        start.setFullYear(end.getFullYear() - 1);
+
+        // [FIX BUG-3] Merge ALL filter changes into a single setFilters call
+        // Previously: two separate setFilters calls → triggered useEffect #2 twice
+        setFilters(prev => ({
+            ...prev,
+            startDate: start.toISOString().split('T')[0],
+            endDate: end.toISOString().split('T')[0],
+            ...(machineIdParam ? { machineId: machineIdParam } : {})
+        }));
+
+        isInitialized.current = true;
+        fetchMachines();
+        fetchDropdownData();
+    }, [authLoading, isAuthenticated, machineIdParam, fetchMachines, fetchDropdownData]); // [FIX BUG-3] machineId is read inside
+
+    useEffect(() => {
+        // [FIX BUG-3] Skip if not yet initialized — prevents firing during first render
+        if (!isInitialized.current) return;
+        if (filters.startDate && filters.endDate) {
+            fetchReports();
+        }
+    }, [filters, fetchReports]);
 
     const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         setFilters((prev) => {

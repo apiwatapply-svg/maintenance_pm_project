@@ -1,6 +1,5 @@
 "use client";
-import { useState, useEffect, useRef } from 'react';
-import Link from 'next/link';
+import { useCallback, useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Swal from 'sweetalert2';
 import { fetchNotifications, requestNotificationPermission, showSystemNotification, NotificationItem } from '../utils/notifications';
@@ -19,47 +18,7 @@ export default function NotificationCenter() {
     const activeNotificationRef = useRef<Notification | null>(null); // [NEW] Track active notification
     const router = useRouter();
 
-    useEffect(() => {
-        // Load notifications on initial mount
-        loadNotifications('FORCE');
-
-        // Poll every 60 seconds (Silent update)
-        const interval = setInterval(() => loadNotifications('SILENT'), 60000);
-
-        // Close dropdown when clicking outside
-        const handleClickOutside = (event: MouseEvent) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-                setIsOpen(false);
-            }
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-
-        // Listen for Dashboard Refresh (Socket updates -> Silent)
-        const handleDashboardRefresh = () => loadNotifications('SILENT');
-        window.addEventListener('refreshNotifications', handleDashboardRefresh);
-
-        // Listen for Window Focus (User returns -> Check)
-        const handleFocus = () => loadNotifications('CHECK');
-        window.addEventListener('focus', handleFocus);
-
-        // [FIX] Add storage listener to react to filter changes in other tabs/components
-        const handleStorage = (e: StorageEvent) => {
-            if (e.key === 'dashboardFilters') {
-                loadNotifications('CHECK');
-            }
-        };
-        window.addEventListener('storage', handleStorage);
-
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-            window.removeEventListener('refreshNotifications', handleDashboardRefresh);
-            window.removeEventListener('focus', handleFocus);
-            window.removeEventListener('storage', handleStorage);
-            clearInterval(interval);
-        };
-    }, []);
-
-    const loadNotifications = async (mode: 'FORCE' | 'CHECK' | 'SILENT' = 'CHECK') => {
+    const loadNotifications = useCallback(async (mode: 'FORCE' | 'CHECK' | 'SILENT' = 'CHECK') => {
         const items = await fetchNotifications();
 
         // 1. Apply DASHBOARD FILTERS (Area, Type, Name)
@@ -193,7 +152,47 @@ export default function NotificationCenter() {
 
             hasNotifiedWebRef.current = true;
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        // Load notifications on initial mount
+        loadNotifications('FORCE');
+
+        // Poll every 60 seconds (Silent update)
+        const interval = setInterval(() => loadNotifications('SILENT'), 60000);
+
+        // Close dropdown when clicking outside
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setIsOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+
+        // Listen for Dashboard Refresh (Socket updates -> Silent)
+        const handleDashboardRefresh = () => loadNotifications('SILENT');
+        window.addEventListener('refreshNotifications', handleDashboardRefresh);
+
+        // Listen for Window Focus (User returns -> Check)
+        const handleFocus = () => loadNotifications('CHECK');
+        window.addEventListener('focus', handleFocus);
+
+        // [FIX] Add storage listener to react to filter changes in other tabs/components
+        const handleStorage = (e: StorageEvent) => {
+            if (e.key === 'dashboardFilters') {
+                loadNotifications('CHECK');
+            }
+        };
+        window.addEventListener('storage', handleStorage);
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+            window.removeEventListener('refreshNotifications', handleDashboardRefresh);
+            window.removeEventListener('focus', handleFocus);
+            window.removeEventListener('storage', handleStorage);
+            clearInterval(interval);
+        };
+    }, [loadNotifications]);
 
     const handleItemClick = (item: NotificationItem) => {
         setIsOpen(false);
